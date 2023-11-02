@@ -1,0 +1,38 @@
+#example of working NDL database
+
+#comment space
+
+test1:{
+    string:"test string"
+    int:1
+    intList:1,3,4,5,6,7,12,314,241
+    stringList:"test1","test2","test3"
+}
+
+#test2:{
+#    test1::string,int   #get specified variables from group "test1"
+#    int:2
+#}
+
+#test3:{
+#    test1:: #get all variables from group "test1"
+#    test2:: #get all variables from group "test2"
+#}
+
+test4:{
+    int:    #empty variable
+    string: #empty variable
+}
+
+test5:{
+    double;double:1.5   #double; is the type specifier
+    double;doubleList:1.3,1.4,7.1   #TYPE; also works for arrays
+    float;float:1.9
+    float;floatList:2.5,2.8,6.7
+    uint:5  #uint will be loaded as int; if not specified in config or as group directive
+}
+
+#test6:<using>uint32;{ #<DIRECTIVE> is used to define behaviour for the whole group. 
+#    test:4            #<using> automatically assigns the TYPE; if not specified directly in group and overrides the config
+#    negative:-7       #<using> only works for variables that are compatible, "negative" will be loaded as int
+#}
