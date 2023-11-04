@@ -8,187 +8,368 @@ NDS::NDS(std::string path)
 void NDS::loadNDL()
 {
     std::ifstream ndlFile;
-    std::string line;
-
     ndlFile.open(path);
 
-    bool inString = false;
+    std::string lines = "";
+    std::string line = "";
+    int type = -1;
     bool inGroup = false;
-    int groupIndex = 0;
-    std::string token = "";
-    while (std::getline(ndlFile, line))
+    bool inList = false;
+    while (getline(ndlFile, line))
     {
-        for (int i = 0; i < line.length(); i++)
-        {
-            if (line[i] == '#')
-                break;
-            if (line[i] == '"')
-                inString = !inString;
-            if (line[i] != ' ' || inString == true)
-                token += line[i];
-        }
+        if (line.find('#') != -1)
+            line = line.substr(0, line.find('#'));
+        if (line == "" || line == " ")
+            continue;
 
-        if (inString == true)
+        if (line.find(":{") != -1 && inGroup == false)
         {
+            groups.push_back(line.substr(0, line.find(":{")));
+            // std::cout << "Group: " << groups.back() << std::endl;
+            inGroup = true;
             continue;
         }
 
-        std::string variableValue = "";
-        int type = -2;
-
-        if (token.find("int;") != -1)
-            type = 0;
-        else if (token.find("uint;") != -1)
-            type = 1;
-        else if (token.find("float;") != -1)
-            type = 2;
-        else if (token.find("double;") != -1)
-            type = 3;
-        else if (token.find("string;") != -1)
-            type = 4;
-        else if (int find = token.find(":{") != -1)
-        {
-            groups.push_back(token.substr(0, token.length() - 2));
-            groupsIndex.push_back(std::vector<int>());
-            inGroup = true;
-        }
-        else if (token.find("}") != -1 && inGroup == true)
+        if (line.find("}") != -1)
         {
             inGroup = false;
-            groupIndex++;
-        }
-        else if (token.find("::") != -1)
-            type = -1;
-        if (int find = token.find(":") != -1)
-        {
-            std::cout << find << "\n";
-            variables.push_back(token.substr(0, find - 1));
-            if (find != line.length())
-                variableValue = token.substr(find + 1, line.length() - 1);
+            continue;
         }
 
-        if (inGroup == true)
+        if (line.find(";") != -1 && inGroup == true && inList == false)
         {
-            int loops = 0;
-            if (token.find(',') != -1)
+            std::string typeString = line.substr(0, line.find(";"));
+            typeString.erase(std::remove_if(typeString.begin(), typeString.end(), isspace), typeString.end());
+            if (typeString == "int")
             {
-                for (char ch : token)
-                {
-                    if (ch == ',')
-                        loops++;
-                }
+                type = 0;
+                line = line.substr(line.find(";") + 1);
             }
-            do
+            else if (typeString == "uint")
             {
-                if (type == -1)
-                {
-                }
-                else if (type == 0)
-                {
-                    try
-                    {
-                        ints.push_back(std::stoi(variableValue));
-                        groupsIndex[groupIndex].push_back(variables.size() - 1);
-                        variableIndex.push_back(std::pair<int, int>(0, ints.size() - 1));
-                    }
-                    catch (...)
-                    {
-                        std::cerr << "Value is not an integer\n";
-                    }
-                }
-                else if (type == 1)
-                {
-                    try
-                    {
-                        uints.push_back(std::stoul(variableValue));
-                        groupsIndex[groupIndex].push_back(variables.size() - 1);
-                        variableIndex.push_back(std::pair<int, int>(1, uints.size() - 1));
-                    }
-                    catch (...)
-                    {
-                        std::cerr << "Value is not an unsigned integer\n";
-                    }
-                }
-                else if (type == 2)
-                {
-                    try
-                    {
-                        floats.push_back(std::stof(variableValue));
-                        groupsIndex[groupIndex].push_back(variables.size() - 1);
-                        variableIndex.push_back(std::pair<int, int>(2, floats.size() - 1));
-                    }
-                    catch (...)
-                    {
-                        std::cerr << "Value is not a float\n";
-                    }
-                }
-                else if (type == 3)
-                {
-                    try
-                    {
-                        doubles.push_back(std::stod(variableValue));
-                        groupsIndex[groupIndex].push_back(variables.size() - 1);
-                        variableIndex.push_back(std::pair<int, int>(3, doubles.size() - 1));
-                    }
-                    catch (...)
-                    {
-                        std::cerr << variableValue << " Value is not a double\n";
-                    }
-                }
-                else if (type == 4)
-                {
-                }
-                else if (variableValue.find('"') != -1)
-                {
-                    strings.push_back(variableValue.substr(1, variableValue.length() - 2));
-                    groupsIndex[groupIndex].push_back(variables.size() - 1);
-                    variableIndex.push_back(std::pair<int, int>(4, strings.size() - 1));
-                }
-                else
-                {
-                    try
-                    {
-                        ints.push_back(std::stoi(variableValue));
-                        groupsIndex[groupIndex].push_back(variables.size() - 1);
-                        variableIndex.push_back(std::pair<int, int>(0, ints.size() - 1));
-                        break;
-                    }
-                    catch (...)
-                    {
-                    }
-                    try
-                    {
-                        floats.push_back(std::stof(variableValue));
-                        groupsIndex[groupIndex].push_back(variables.size() - 1);
-                        variableIndex.push_back(std::pair<int, int>(2, floats.size() - 1));
-                        break;
-                    }
-                    catch (...)
-                    {
-                    }
-                    try
-                    {
-                        doubles.push_back(std::stod(variableValue));
-                        groupsIndex[groupIndex].push_back(variables.size() - 1);
-                        variableIndex.push_back(std::pair<int, int>(3, doubles.size() - 1));
-                        break;
-                    }
-                    catch (...)
-                    {
-                    }
-                    strings.push_back(variableValue.substr(1, variableValue.length() - 2));
-                    groupsIndex[groupIndex].push_back(variables.size() - 1);
-                    variableIndex.push_back(std::pair<int, int>(4, strings.size() - 1));
-                }
-                loops--;
-            } while (loops > 0);
+                type = 1;
+                line = line.substr(line.find(";") + 1);
+            }
+            else if (typeString == "float")
+            {
+                type = 2;
+                line = line.substr(line.find(";") + 1);
+            }
+            else if (typeString == "double")
+            {
+                type = 3;
+                line = line.substr(line.find(";") + 1);
+            }
+            else if (typeString == "string")
+            {
+                type = 4;
+                line = line.substr(line.find(";") + 1);
+            }
+            else
+                std::cerr << "Error: Invalid type" << std::endl;
+            // std::cout << "Type: " << typeString << " ";
         }
-        token = "";
+        else
+            type = -1;
+
+        if (line.find(":") != -1 && inGroup == true && inList == false)
+        {
+            std::string varName = line.substr(0, line.find(":"));
+            varName.erase(std::remove_if(varName.begin(), varName.end(), isspace), varName.end());
+            // std::cout << "Variable: " << varName << " ";
+            variables.push_back(varName);
+            groupVariableIndex.push_back({groups.size() - 1, variables.size() - 1});
+        }
+
+        if (line.find("[") != -1 && line.find("]") && inGroup == true && inList == false)
+        {
+            // std::cout << "= ";
+            inList = true;
+            line = line.substr(line.find("[") + 1, line.find("]"));
+        }
+        else if (line.find("[") != -1 && inGroup == true && inList == false)
+        {
+            // std::cout << "= ";
+            inList = true;
+            lines += line.substr(line.find("[") + 1);
+            continue;
+        }
+        std::vector<std::string> list;
+        if (inList == true)
+        {
+            if (line.find("]") != -1)
+            {
+                inList = false;
+                lines += line.substr(0, line.find("]"));
+
+                while (lines.find(",") != -1)
+                {
+                    list.push_back(lines.substr(0, lines.find(",")));
+                    lines = lines.substr(lines.find(",") + 1);
+                }
+                list.push_back(lines.substr(0, lines.find("]")));
+                for (std::string element : list)
+                {
+                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
+                    // std::cout << element << " ";
+                }
+                lines = "";
+            }
+            else
+            {
+                lines += line;
+                continue;
+            }
+        }
+
+        if (list.size() == 0)
+        {
+            switch (type)
+            {
+            case 0:
+                line = line.substr(line.find(":") + 1);
+                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+                ints.push_back(std::stoi(line));
+                variableIndex.push_back({variables.size() - 1, type, ints.size() - 1});
+                // std::cout << ints.back() << std::endl;
+                type = -1;
+                continue;
+            case 1:
+                line = line.substr(line.find(":") + 1);
+                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+                uints.push_back(std::stoul(line));
+                variableIndex.push_back({variables.size() - 1, type, uints.size() - 1});
+                // std::cout << uints.back() << std::endl;
+                type = -1;
+                continue;
+            case 2:
+                line = line.substr(line.find(":") + 1);
+                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+                floats.push_back(std::stof(line));
+                variableIndex.push_back({variables.size() - 1, type, floats.size() - 1});
+                // std::cout << floats.back() << std::endl;
+                type = -1;
+                continue;
+            case 3:
+                line = line.substr(line.find(":") + 1);
+                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+                doubles.push_back(std::stod(line));
+                variableIndex.push_back({variables.size() - 1, type, doubles.size() - 1});
+                // std::cout << doubles.back() << std::endl;
+                type = -1;
+                continue;
+            case 4:
+                line = line.substr(line.find(":") + 1);
+                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+                strings.push_back(line);
+                variableIndex.push_back({variables.size() - 1, type, strings.size() - 1});
+                // std::cout << strings.back() << std::endl;
+                type = -1;
+                continue;
+            }
+        }
+        else
+        {
+            switch (type)
+            {
+            case 0:
+                for (std::string element : list)
+                {
+                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
+                    ints.push_back(std::stoi(element));
+                    variableIndex.push_back({variables.size() - 1, type, ints.size() - 1});
+                    // std::cout << ints.back() << " ";
+                }
+                // std::cout << std::endl;
+                type = -1;
+                continue;
+            case 1:
+                for (std::string element : list)
+                {
+                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
+                    uints.push_back(std::stoul(element));
+                    variableIndex.push_back({variables.size() - 1, type, uints.size() - 1});
+                    // std::cout << uints.back() << " ";
+                }
+                // std::cout << std::endl;
+                type = -1;
+                continue;
+            case 2:
+                for (std::string element : list)
+                {
+                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
+                    floats.push_back(std::stof(element));
+                    variableIndex.push_back({variables.size() - 1, type, floats.size() - 1});
+                    // std::cout << floats.back() << " ";
+                }
+                // std::cout << std::endl;
+                type = -1;
+                continue;
+            case 3:
+                for (std::string element : list)
+                {
+                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
+                    doubles.push_back(std::stod(element));
+                    variableIndex.push_back({variables.size() - 1, type, doubles.size() - 1});
+                    // std::cout << doubles.back() << " ";
+                }
+                // std::cout << std::endl;
+                type = -1;
+                continue;
+            case 4:
+                for (std::string element : list)
+                {
+                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
+                    strings.push_back(element);
+                    variableIndex.push_back({variables.size() - 1, type, strings.size() - 1});
+                    // std::cout << strings.back() << " ";
+                }
+                // std::cout << std::endl;
+                type = -1;
+                continue;
+            }
+        }
+
+        if (type != -1)
+            continue;
+
+        if (list.size() == 0)
+        {
+            line = line.substr(line.find(":") + 1);
+            line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
+
+            try
+            {
+                ints.push_back(std::stoi(line));
+                variableIndex.push_back({variables.size() - 1, 0, ints.size() - 1});
+                continue;
+            }
+            catch (...)
+            {
+            }
+
+            try
+            {
+                uints.push_back(std::stoul(line));
+                variableIndex.push_back({variables.size() - 1, 1, uints.size() - 1});
+                continue;
+            }
+            catch (...)
+            {
+            }
+
+            try
+            {
+                floats.push_back(std::stof(line));
+                variableIndex.push_back({variables.size() - 1, 2, floats.size() - 1});
+                continue;
+            }
+            catch (...)
+            {
+            }
+
+            try
+            {
+                doubles.push_back(std::stod(line));
+                variableIndex.push_back({variables.size() - 1, 3, doubles.size() - 1});
+                continue;
+            }
+            catch (...)
+            {
+            }
+
+            strings.push_back(line);
+            variableIndex.push_back({variables.size() - 1, 4, strings.size() - 1});
+        }
+        else
+        {
+            for (std::string element : list)
+            {
+                element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
+
+                try
+                {
+                    ints.push_back(std::stoi(element));
+                    variableIndex.push_back({variables.size() - 1, 0, ints.size() - 1});
+                    continue;
+                }
+                catch (...)
+                {
+                }
+
+                try
+                {
+                    uints.push_back(std::stoul(element));
+                    variableIndex.push_back({variables.size() - 1, 1, uints.size() - 1});
+                    continue;
+                }
+                catch (...)
+                {
+                }
+
+                try
+                {
+                    floats.push_back(std::stof(element));
+                    variableIndex.push_back({variables.size() - 1, 2, floats.size() - 1});
+                    continue;
+                }
+                catch (...)
+                {
+                }
+
+                try
+                {
+                    doubles.push_back(std::stod(element));
+                    variableIndex.push_back({variables.size() - 1, 3, doubles.size() - 1});
+                    continue;
+                }
+                catch (...)
+                {
+                }
+
+                strings.push_back(element);
+                variableIndex.push_back({variables.size() - 1, 4, strings.size() - 1});
+            }
+        }
     }
 
-    if (inString == true)
+    ndlFile.close();
+
+    /*std::cout << groups.size() << std::endl;
+    std::cout << variables.size() << std::endl;
+    std::cout << ints.size() << std::endl;
+    std::cout << uints.size() << std::endl;
+    std::cout << floats.size() << std::endl;
+    std::cout << doubles.size() << std::endl;
+    std::cout << strings.size() << std::endl;*/
+
+    for (auto gvIndex : groupVariableIndex)
     {
-        std::cerr << "String not closed\n";
-        return;
+        std::cout << groups[gvIndex.first] << " " << variables[gvIndex.second] << ": ";
+
+        for (auto vIndex : variableIndex)
+        {
+            if (std::get<0>(vIndex) != gvIndex.second)
+                continue;
+
+            switch (std::get<1>(vIndex))
+            {
+            case 0:
+                std::cout << ints[std::get<2>(vIndex)] << std::endl;
+                break;
+            case 1:
+                std::cout << uints[std::get<2>(vIndex)] << std::endl;
+                break;
+            case 2:
+                std::cout << floats[std::get<2>(vIndex)] << std::endl;
+                break;
+            case 3:
+                std::cout << doubles[std::get<2>(vIndex)] << std::endl;
+                break;
+            case 4:
+                std::cout << strings[std::get<2>(vIndex)] << std::endl;
+                break;
+            }
+        }
     }
 }

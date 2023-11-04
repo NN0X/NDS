@@ -1,7 +1,11 @@
+// MOVE LISTS TO SEPARATE VARIABLES
+// SHRINK variableIndex TO ONLY CONTAIN THE VARIABLE TYPE AND VECTOR INDEX
+
 #include <iostream>
 #include <string>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 
 struct Config
 {
@@ -17,9 +21,9 @@ private:
     // Config config;
 
     std::vector<std::string> groups;
-    std::vector<std::vector<int>> groupsIndex;
+    std::vector<std::pair<int, int>> groupVariableIndex; // <group index, var index>
     std::vector<std::string> variables;
-    std::vector<std::pair<int, int>> variableIndex; // <type, index>
+    std::vector<std::tuple<int, int, int>> variableIndex; // <var index, var type, var vector index>
 
     std::vector<int> ints;
     std::vector<unsigned int> uints;
