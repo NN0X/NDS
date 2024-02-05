@@ -8,7 +8,7 @@ NDS::NDS(std::string path)
 void NDS::printNDL()
 {
     int groupIndex = -1;
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) != groupIndex)
         {
@@ -321,7 +321,7 @@ void NDS::saveNDL(std::string path)
     for (int i = 0; i < groupNames.size(); i++)
     {
         file << groupNames[i] << ":{\n";
-        for (auto data : groupVariableData)
+        for (std::tuple<int, std::string, int, int> data : groupVariableData)
         {
             if (std::get<0>(data) == i)
             {
@@ -382,7 +382,7 @@ void NDS::saveNDL(std::string path)
 
 int NDS::getInt(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 0)
             return ints[std::get<3>(data)];
@@ -392,7 +392,7 @@ int NDS::getInt(std::string variableName, std::string groupName)
 
 unsigned int NDS::getUInt(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 1)
             return uints[std::get<3>(data)];
@@ -402,7 +402,7 @@ unsigned int NDS::getUInt(std::string variableName, std::string groupName)
 
 float NDS::getFloat(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 2)
             return floats[std::get<3>(data)];
@@ -412,7 +412,7 @@ float NDS::getFloat(std::string variableName, std::string groupName)
 
 double NDS::getDouble(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 3)
             return doubles[std::get<3>(data)];
@@ -422,7 +422,7 @@ double NDS::getDouble(std::string variableName, std::string groupName)
 
 std::string NDS::getString(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 4)
             return strings[std::get<3>(data)];
@@ -432,7 +432,7 @@ std::string NDS::getString(std::string variableName, std::string groupName)
 
 std::vector<int> NDS::getIntList(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 10)
             return intLists[std::get<3>(data)];
@@ -442,7 +442,7 @@ std::vector<int> NDS::getIntList(std::string variableName, std::string groupName
 
 std::vector<unsigned int> NDS::getUIntList(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 11)
             return uintLists[std::get<3>(data)];
@@ -452,7 +452,7 @@ std::vector<unsigned int> NDS::getUIntList(std::string variableName, std::string
 
 std::vector<float> NDS::getFloatList(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 12)
             return floatLists[std::get<3>(data)];
@@ -462,7 +462,7 @@ std::vector<float> NDS::getFloatList(std::string variableName, std::string group
 
 std::vector<double> NDS::getDoubleList(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 13)
             return doubleLists[std::get<3>(data)];
@@ -472,7 +472,7 @@ std::vector<double> NDS::getDoubleList(std::string variableName, std::string gro
 
 std::vector<std::string> NDS::getStringList(std::string variableName, std::string groupName)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 14)
             return stringLists[std::get<3>(data)];
@@ -542,7 +542,7 @@ std::vector<std::vector<std::string>> NDS::getStringLists()
 
 void NDS::setInt(std::string variableName, std::string groupName, int value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 0)
         {
@@ -554,7 +554,7 @@ void NDS::setInt(std::string variableName, std::string groupName, int value)
 
 void NDS::setUInt(std::string variableName, std::string groupName, unsigned int value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 1)
         {
@@ -566,7 +566,7 @@ void NDS::setUInt(std::string variableName, std::string groupName, unsigned int 
 
 void NDS::setFloat(std::string variableName, std::string groupName, float value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 2)
         {
@@ -578,7 +578,7 @@ void NDS::setFloat(std::string variableName, std::string groupName, float value)
 
 void NDS::setDouble(std::string variableName, std::string groupName, double value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 3)
         {
@@ -590,7 +590,7 @@ void NDS::setDouble(std::string variableName, std::string groupName, double valu
 
 void NDS::setString(std::string variableName, std::string groupName, std::string value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 4)
         {
@@ -602,7 +602,7 @@ void NDS::setString(std::string variableName, std::string groupName, std::string
 
 void NDS::setIntList(std::string variableName, std::string groupName, std::vector<int> value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 10)
         {
@@ -614,7 +614,7 @@ void NDS::setIntList(std::string variableName, std::string groupName, std::vecto
 
 void NDS::setUIntList(std::string variableName, std::string groupName, std::vector<unsigned int> value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 11)
         {
@@ -626,7 +626,7 @@ void NDS::setUIntList(std::string variableName, std::string groupName, std::vect
 
 void NDS::setFloatList(std::string variableName, std::string groupName, std::vector<float> value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 12)
         {
@@ -638,7 +638,7 @@ void NDS::setFloatList(std::string variableName, std::string groupName, std::vec
 
 void NDS::setDoubleList(std::string variableName, std::string groupName, std::vector<double> value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 13)
         {
@@ -650,7 +650,7 @@ void NDS::setDoubleList(std::string variableName, std::string groupName, std::ve
 
 void NDS::setStringList(std::string variableName, std::string groupName, std::vector<std::string> value)
 {
-    for (auto data : groupVariableData)
+    for (std::tuple<int, std::string, int, int> data : groupVariableData)
     {
         if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 14)
         {
