@@ -1,6 +1,6 @@
 #example of working NDL file
 
-# is used to indicate that all characters in line after are ignored
+# is used to indicate that all characters in the same line after it are ignored
 
 #supported datatypes:
 #   int
@@ -9,58 +9,30 @@
 #   double
 #   string
 
-test1:{     #group is the biggest data object similar to struct in C++
-    string:"test string"
-    int:1
-    intList:1,3,4,5,6,7,12,314,241
-    stringList1:["test1","test2","test3"]   #list of variables
-    stringList2:[                           #this is also a working list
-        "test1",
-        "test2",
-        "test3"
-        ]
-    stringList3:["test1",                   #and this
-    "test2",
-    "test3"
-    ]
+test1:{     #group is the biggest data object, similar to struct in C
+    string;string:"test string"
+    int;int:1
+    int[];intList:[1,3,4,5,6,7,12,314,241]           #list of variables has to have a defined size
+    string[];stringList1:["test1","test2","test3"]   #list of variables
 }
 
-#test2:{
-#    test1::string,int   #get specified variables from group "test1"
-#    int:2
-#}
-
-#test3:{
-#    test1:: #get all variables from group "test1"
-#    test2:: #get all variables from group "test2"
-#}
-
-test4:{
-    int:    #empty variable
-    string: #empty variable
-}
-
-test5:{
+test2:{
     double;double:1.5   #"double;" is the type specifier
-    double;doubleList:[1.3,1.4,7.1]   #"TYPE;" also works for arrays
+    double[];doubleList:[1.3,1.4,7.1]   #"TYPE;" also works for arrays
     float;float:1.9
-    float;floatList:[2.5,2.8,6.7]
-    number:5  #"number" will be loaded as int; if not specified in config or as group directive
-}   #!specifing the type is always faster!
+    float[];floatList:[2.5,2.8,6.7]
+}
 
-#test6:<using>uint32;{ #"<DIRECTIVE>" is used to define behaviour for the whole group. 
-#   test:4            #"<using>" automatically assigns the TYPE; if not specified directly in group and overrides the config
-#   negative:-7       #"<using>" only works for variables that are compatible, "negative" will be loaded as int
+#MOVE TO SEPERATE EXAMPLE FILES
+
+#test3:<template>{      #directive <template> is used to specify that the group is a template
+    #string;type:"name"         #all variables with specified values will be copied to group using the template as constants
+    #int;index:?         #variable can be definded as template using "?" symbol
+    #double;size:?[2]    #when defining a list "[i]" is used, where "i" is number of elements
 #}
 
-#test7:<using>uint32;double;{
-#   integer:4       #"<using>" assigns types with hierarchy. As "uint32;" is first all positive integers will be uints and "double;" will be ignored
-#   negative:-3     #variables will use the first appropriate type stated in "<using>" directive. This will be loaded as double
-#}
+#test4:<using>test3{1,[5,5]}    #"<using>" directive specifies the template used by the group
 
-#test8:<string>{
-#   test1:5         #"<string>" directive assumes that all variables in group are a string nullifying the need to use quotation marks
-#   test2:-0.7
-#   test3:test
-#   test4:"test message" #in case of strings with multiple words the quotation marks are still necessary to avoid null spaces confusion as "test:test message" would be interpreted as "test:testmessage"
-#}
+#<using>test3             #"<using>" can be also used as global directive
+#test5:{1,[1,1]}
+#test6:{2,[2,2]}

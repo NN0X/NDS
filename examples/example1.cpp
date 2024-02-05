@@ -1,4 +1,4 @@
-// D:\Dev\NDS\build> g++ ../examples/example1.cpp ../source/nds.cpp -o test
+// <NDS\build> g++ ../examples/example1.cpp ../source/nds.cpp -o example1
 
 #include "../include/nds.h"
 

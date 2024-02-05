@@ -5,371 +5,854 @@ NDS::NDS(std::string path)
     this->path = path;
 }
 
+void NDS::printNDL()
+{
+    int groupIndex = -1;
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) != groupIndex)
+        {
+            groupIndex = std::get<0>(data);
+            std::cout << groupNames[groupIndex] << ":\n";
+        }
+        switch (std::get<2>(data))
+        {
+        case 0:
+            std::cout << "int;" << std::get<1>(data) << ":" << ints[std::get<3>(data)] << "\n";
+            break;
+        case 1:
+            std::cout << "uint;" << std::get<1>(data) << ":" << uints[std::get<3>(data)] << "\n";
+            break;
+        case 2:
+            std::cout << "float;" << std::get<1>(data) << ":" << floats[std::get<3>(data)] << "\n";
+            break;
+        case 3:
+            std::cout << "double;" << std::get<1>(data) << ":" << doubles[std::get<3>(data)] << "\n";
+            break;
+        case 4:
+            std::cout << "string;" << std::get<1>(data) << ":" << strings[std::get<3>(data)] << "\n";
+            break;
+        case 10:
+            std::cout << "int[];" << std::get<1>(data) << ":[" << intLists[std::get<3>(data)][0];
+            for (int i = 1; i < intLists[std::get<3>(data)].size(); i++)
+                std::cout << "," << intLists[std::get<3>(data)][i];
+            std::cout << "]\n";
+            break;
+        case 11:
+            std::cout << "uint[];" << std::get<1>(data) << ":[" << uintLists[std::get<3>(data)][0];
+            for (int i = 1; i < uintLists[std::get<3>(data)].size(); i++)
+                std::cout << "," << uintLists[std::get<3>(data)][i];
+            std::cout << "]\n";
+            break;
+        case 12:
+            std::cout << "float[];" << std::get<1>(data) << ":[" << floatLists[std::get<3>(data)][0];
+            for (int i = 1; i < floatLists[std::get<3>(data)].size(); i++)
+                std::cout << "," << floatLists[std::get<3>(data)][i];
+            std::cout << "]\n";
+            break;
+        case 13:
+            std::cout << "double[];" << std::get<1>(data) << ":[" << doubleLists[std::get<3>(data)][0];
+            for (int i = 1; i < doubleLists[std::get<3>(data)].size(); i++)
+                std::cout << "," << doubleLists[std::get<3>(data)][i];
+            std::cout << "]\n";
+            break;
+        case 14:
+            std::cout << "string[];" << std::get<1>(data) << ":[" << stringLists[std::get<3>(data)][0];
+            for (int i = 1; i < stringLists[std::get<3>(data)].size(); i++)
+                std::cout << "," << stringLists[std::get<3>(data)][i];
+            std::cout << "]\n";
+            break;
+        }
+    }
+}
+
+int getType(std::string type)
+{
+    if (type == "int")
+        return 0;
+    else if (type == "uint")
+        return 1;
+    else if (type == "float")
+        return 2;
+    else if (type == "double")
+        return 3;
+    else
+        return 4;
+}
+
+unsigned int convertToUInt(std::string str)
+{
+    unsigned int result = 0;
+    for (char c : str)
+    {
+        if (c >= '0' && c <= '9')
+            result = result * 10 + (c - '0');
+    }
+    return result;
+}
+
+int convertToInt(std::string str)
+{
+    int result = 0;
+    for (char c : str)
+    {
+        if (c >= '0' && c <= '9')
+            result = result * 10 + (c - '0');
+    }
+    return result;
+}
+
+float convertToFloat(std::string str)
+{
+    float result = 0;
+    int decimalIndex = str.find(".");
+    int decimalPlaces = str.size() - decimalIndex - 1;
+    for (char c : str)
+    {
+        if (c >= '0' && c <= '9')
+            result = result * 10 + (c - '0');
+    }
+    return result / pow(10, decimalPlaces);
+}
+
+double convertToDouble(std::string str)
+{
+    double result = 0;
+    int decimalIndex = str.find(".");
+    int decimalPlaces = str.size() - decimalIndex - 1;
+    for (char c : str)
+    {
+        if (c >= '0' && c <= '9')
+            result = result * 10 + (c - '0');
+    }
+    return result / pow(10, decimalPlaces);
+}
+
+std::string convertToString(std::string str)
+{
+    return str.substr(str.find('"') + 1, str.size() - 2);
+}
+
 void NDS::loadNDL()
 {
-    std::ifstream ndlFile;
-    ndlFile.open(path);
+    loadNDL(this->path);
+}
 
-    std::string lines = "";
-    std::string line = "";
+void NDS::loadNDL(std::string path)
+{
+    std::ifstream file(path);
+    std::vector<std::string> alllines;
+    std::string line;
+    std::string lineParsed;
+
+    bool inString = false;
+    while (std::getline(file, line))
+    {
+        for (char c : line)
+        {
+            if (c == '"')
+                inString = !inString;
+            if (c == '#')
+                break;
+            else if (c != ' ' || inString)
+                lineParsed += c;
+        }
+        inString = false;
+        if (lineParsed != "")
+        {
+            alllines.push_back(lineParsed);
+            lineParsed = "";
+        }
+    }
+
+    int groupIndex = 0;
     int type = -1;
-    bool inGroup = false;
-    bool inList = false;
-    while (getline(ndlFile, line))
+    bool isList = false;
+    for (std::string l : alllines)
     {
-        if (line.find('#') != -1)
-            line = line.substr(0, line.find('#'));
-        if (line == "" || line == " ")
-            continue;
-
-        if (line.find(":{") != -1 && inGroup == false)
+        if (l.find("{") != std::string::npos)
         {
-            groups.push_back(line.substr(0, line.find(":{")));
-            // std::cout << "Group: " << groups.back() << std::endl;
-            inGroup = true;
+            groupNames.push_back(l.substr(0, l.find(":")));
+            continue;
+        }
+        if (l.find("}") != std::string::npos)
+        {
+            groupIndex++;
             continue;
         }
 
-        if (line.find("}") != -1)
-        {
-            inGroup = false;
-            continue;
-        }
+        std::string typeStr = l.substr(0, l.find(";"));
 
-        if (line.find(";") != -1 && inGroup == true && inList == false)
+        if (typeStr.find("[") != std::string::npos)
         {
-            std::string typeString = line.substr(0, line.find(";"));
-            typeString.erase(std::remove_if(typeString.begin(), typeString.end(), isspace), typeString.end());
-            if (typeString == "int")
-            {
-                type = 0;
-                line = line.substr(line.find(";") + 1);
-            }
-            else if (typeString == "uint")
-            {
-                type = 1;
-                line = line.substr(line.find(";") + 1);
-            }
-            else if (typeString == "float")
-            {
-                type = 2;
-                line = line.substr(line.find(";") + 1);
-            }
-            else if (typeString == "double")
-            {
-                type = 3;
-                line = line.substr(line.find(";") + 1);
-            }
-            else if (typeString == "string")
-            {
-                type = 4;
-                line = line.substr(line.find(";") + 1);
-            }
-            else
-                std::cerr << "Error: Invalid type" << std::endl;
-            // std::cout << "Type: " << typeString << " ";
+            isList = true;
+            typeStr = typeStr.substr(0, typeStr.find("["));
         }
         else
-            type = -1;
+            isList = false;
 
-        if (line.find(":") != -1 && inGroup == true && inList == false)
-        {
-            std::string varName = line.substr(0, line.find(":"));
-            varName.erase(std::remove_if(varName.begin(), varName.end(), isspace), varName.end());
-            // std::cout << "Variable: " << varName << " ";
-            variables.push_back(varName);
-            groupVariableIndex.push_back({groups.size() - 1, variables.size() - 1});
-        }
+        type = getType(typeStr);
 
-        if (line.find("[") != -1 && line.find("]") && inGroup == true && inList == false)
-        {
-            // std::cout << "= ";
-            inList = true;
-            line = line.substr(line.find("[") + 1, line.find("]"));
-        }
-        else if (line.find("[") != -1 && inGroup == true && inList == false)
-        {
-            // std::cout << "= ";
-            inList = true;
-            lines += line.substr(line.find("[") + 1);
-            continue;
-        }
-        std::vector<std::string> list;
-        if (inList == true)
-        {
-            if (line.find("]") != -1)
-            {
-                inList = false;
-                lines += line.substr(0, line.find("]"));
+        std::string variableName = l.substr(l.find(";") + 1, l.find(":") - l.find(";") - 1);
 
-                while (lines.find(",") != -1)
-                {
-                    list.push_back(lines.substr(0, lines.find(",")));
-                    lines = lines.substr(lines.find(",") + 1);
-                }
-                list.push_back(lines.substr(0, lines.find("]")));
-                for (std::string element : list)
-                {
-                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
-                    // std::cout << element << " ";
-                }
-                lines = "";
-            }
-            else
-            {
-                lines += line;
-                continue;
-            }
-        }
-
-        if (list.size() == 0)
+        if (isList)
         {
+            std::string str = l.substr(l.find("[") + 1, l.size());
+            str = str.substr(str.find("[") + 1, str.size());
             switch (type)
             {
             case 0:
-                line = line.substr(line.find(":") + 1);
-                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-                ints.push_back(std::stoi(line));
-                variableIndex.push_back({variables.size() - 1, type, ints.size() - 1});
-                // std::cout << ints.back() << std::endl;
-                type = -1;
-                continue;
+                intLists.push_back(std::vector<int>());
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type + 10, intLists.size() - 1));
+                while (true)
+                {
+                    intLists[intLists.size() - 1].push_back(convertToInt(str.substr(0, str.find(","))));
+                    str = str.substr(str.find(",") + 1, str.size());
+                    if (str.find(",") == std::string::npos)
+                    {
+                        str = str.substr(0, str.size() - 1);
+                        intLists[intLists.size() - 1].push_back(convertToInt(str));
+                        break;
+                    }
+                }
+                break;
             case 1:
-                line = line.substr(line.find(":") + 1);
-                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-                uints.push_back(std::stoul(line));
-                variableIndex.push_back({variables.size() - 1, type, uints.size() - 1});
-                // std::cout << uints.back() << std::endl;
-                type = -1;
-                continue;
+                uintLists.push_back(std::vector<unsigned int>());
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type + 10, uintLists.size() - 1));
+                while (true)
+                {
+                    uintLists[uintLists.size() - 1].push_back(convertToUInt(str.substr(0, str.find(","))));
+                    str = str.substr(str.find(",") + 1, str.size());
+                    if (str.find(",") == std::string::npos)
+                    {
+                        str = str.substr(0, str.size() - 1);
+                        uintLists[uintLists.size() - 1].push_back(convertToUInt(str));
+                        break;
+                    }
+                }
+                break;
             case 2:
-                line = line.substr(line.find(":") + 1);
-                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-                floats.push_back(std::stof(line));
-                variableIndex.push_back({variables.size() - 1, type, floats.size() - 1});
-                // std::cout << floats.back() << std::endl;
-                type = -1;
-                continue;
+                floatLists.push_back(std::vector<float>());
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type + 10, floatLists.size() - 1));
+                while (true)
+                {
+                    floatLists[floatLists.size() - 1].push_back(convertToFloat(str.substr(0, str.find(","))));
+                    str = str.substr(str.find(",") + 1, str.size());
+                    if (str.find(",") == std::string::npos)
+                    {
+                        str = str.substr(0, str.size() - 1);
+                        floatLists[floatLists.size() - 1].push_back(convertToFloat(str));
+                        break;
+                    }
+                }
+                break;
             case 3:
-                line = line.substr(line.find(":") + 1);
-                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-                doubles.push_back(std::stod(line));
-                variableIndex.push_back({variables.size() - 1, type, doubles.size() - 1});
-                // std::cout << doubles.back() << std::endl;
-                type = -1;
-                continue;
+                doubleLists.push_back(std::vector<double>());
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type + 10, doubleLists.size() - 1));
+                while (true)
+                {
+                    doubleLists[doubleLists.size() - 1].push_back(convertToDouble(str.substr(0, str.find(","))));
+                    str = str.substr(str.find(",") + 1, str.size());
+                    if (str.find(",") == std::string::npos)
+                    {
+                        str = str.substr(0, str.size() - 1);
+                        doubleLists[doubleLists.size() - 1].push_back(convertToDouble(str));
+                        break;
+                    }
+                }
+                break;
             case 4:
-                line = line.substr(line.find(":") + 1);
-                line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-                strings.push_back(line);
-                variableIndex.push_back({variables.size() - 1, type, strings.size() - 1});
-                // std::cout << strings.back() << std::endl;
-                type = -1;
-                continue;
+                stringLists.push_back(std::vector<std::string>());
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type + 10, stringLists.size() - 1));
+                while (true)
+                {
+                    stringLists[stringLists.size() - 1].push_back(convertToString(str.substr(0, str.find(","))));
+                    str = str.substr(str.find(",") + 1, str.size());
+                    if (str.find(",") == std::string::npos)
+                    {
+                        str = str.substr(0, str.size() - 1);
+                        stringLists[stringLists.size() - 1].push_back(convertToString(str));
+                        break;
+                    }
+                }
+                break;
             }
         }
         else
         {
+            std::string str = l.substr(l.find(":") + 1, l.size());
             switch (type)
             {
             case 0:
-                for (std::string element : list)
-                {
-                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
-                    ints.push_back(std::stoi(element));
-                    variableIndex.push_back({variables.size() - 1, type, ints.size() - 1});
-                    // std::cout << ints.back() << " ";
-                }
-                // std::cout << std::endl;
-                type = -1;
-                continue;
+                ints.push_back(convertToInt(str));
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type, ints.size() - 1));
+                break;
             case 1:
-                for (std::string element : list)
-                {
-                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
-                    uints.push_back(std::stoul(element));
-                    variableIndex.push_back({variables.size() - 1, type, uints.size() - 1});
-                    // std::cout << uints.back() << " ";
-                }
-                // std::cout << std::endl;
-                type = -1;
-                continue;
+                uints.push_back(convertToUInt(str));
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type, uints.size() - 1));
+                break;
             case 2:
-                for (std::string element : list)
-                {
-                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
-                    floats.push_back(std::stof(element));
-                    variableIndex.push_back({variables.size() - 1, type, floats.size() - 1});
-                    // std::cout << floats.back() << " ";
-                }
-                // std::cout << std::endl;
-                type = -1;
-                continue;
+                floats.push_back(convertToFloat(str));
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type, floats.size() - 1));
+                break;
             case 3:
-                for (std::string element : list)
-                {
-                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
-                    doubles.push_back(std::stod(element));
-                    variableIndex.push_back({variables.size() - 1, type, doubles.size() - 1});
-                    // std::cout << doubles.back() << " ";
-                }
-                // std::cout << std::endl;
-                type = -1;
-                continue;
+                doubles.push_back(convertToDouble(str));
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type, doubles.size() - 1));
+                break;
             case 4:
-                for (std::string element : list)
-                {
-                    element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
-                    strings.push_back(element);
-                    variableIndex.push_back({variables.size() - 1, type, strings.size() - 1});
-                    // std::cout << strings.back() << " ";
-                }
-                // std::cout << std::endl;
-                type = -1;
-                continue;
-            }
-        }
-
-        if (type != -1)
-            continue;
-
-        if (list.size() == 0)
-        {
-            line = line.substr(line.find(":") + 1);
-            line.erase(std::remove_if(line.begin(), line.end(), isspace), line.end());
-
-            try
-            {
-                ints.push_back(std::stoi(line));
-                variableIndex.push_back({variables.size() - 1, 0, ints.size() - 1});
-                continue;
-            }
-            catch (...)
-            {
-            }
-
-            try
-            {
-                uints.push_back(std::stoul(line));
-                variableIndex.push_back({variables.size() - 1, 1, uints.size() - 1});
-                continue;
-            }
-            catch (...)
-            {
-            }
-
-            try
-            {
-                floats.push_back(std::stof(line));
-                variableIndex.push_back({variables.size() - 1, 2, floats.size() - 1});
-                continue;
-            }
-            catch (...)
-            {
-            }
-
-            try
-            {
-                doubles.push_back(std::stod(line));
-                variableIndex.push_back({variables.size() - 1, 3, doubles.size() - 1});
-                continue;
-            }
-            catch (...)
-            {
-            }
-
-            strings.push_back(line);
-            variableIndex.push_back({variables.size() - 1, 4, strings.size() - 1});
-        }
-        else
-        {
-            for (std::string element : list)
-            {
-                element.erase(std::remove_if(element.begin(), element.end(), isspace), element.end());
-
-                try
-                {
-                    ints.push_back(std::stoi(element));
-                    variableIndex.push_back({variables.size() - 1, 0, ints.size() - 1});
-                    continue;
-                }
-                catch (...)
-                {
-                }
-
-                try
-                {
-                    uints.push_back(std::stoul(element));
-                    variableIndex.push_back({variables.size() - 1, 1, uints.size() - 1});
-                    continue;
-                }
-                catch (...)
-                {
-                }
-
-                try
-                {
-                    floats.push_back(std::stof(element));
-                    variableIndex.push_back({variables.size() - 1, 2, floats.size() - 1});
-                    continue;
-                }
-                catch (...)
-                {
-                }
-
-                try
-                {
-                    doubles.push_back(std::stod(element));
-                    variableIndex.push_back({variables.size() - 1, 3, doubles.size() - 1});
-                    continue;
-                }
-                catch (...)
-                {
-                }
-
-                strings.push_back(element);
-                variableIndex.push_back({variables.size() - 1, 4, strings.size() - 1});
+                strings.push_back(convertToString(str));
+                groupVariableData.push_back(std::make_tuple(groupIndex, variableName, type, strings.size() - 1));
+                break;
             }
         }
     }
 
-    ndlFile.close();
+    file.close();
+}
 
-    /*std::cout << groups.size() << std::endl;
-    std::cout << variables.size() << std::endl;
-    std::cout << ints.size() << std::endl;
-    std::cout << uints.size() << std::endl;
-    std::cout << floats.size() << std::endl;
-    std::cout << doubles.size() << std::endl;
-    std::cout << strings.size() << std::endl;*/
+void NDS::saveNDL()
+{
+    saveNDL(this->path);
+}
 
-    for (auto gvIndex : groupVariableIndex)
+void NDS::saveNDL(std::string path)
+{
+    std::ofstream file(path);
+    for (int i = 0; i < groupNames.size(); i++)
     {
-        std::cout << groups[gvIndex.first] << " " << variables[gvIndex.second] << ": ";
-
-        for (auto vIndex : variableIndex)
+        file << groupNames[i] << ":{\n";
+        for (auto data : groupVariableData)
         {
-            if (std::get<0>(vIndex) != gvIndex.second)
-                continue;
+            if (std::get<0>(data) == i)
+            {
+                switch (std::get<2>(data))
+                {
+                case 0:
+                    file << "\tint;" << std::get<1>(data) << ":" << ints[std::get<3>(data)] << "\n";
+                    break;
+                case 1:
+                    file << "\tuint;" << std::get<1>(data) << ":" << uints[std::get<3>(data)] << "\n";
+                    break;
+                case 2:
+                    file << "\tfloat;" << std::get<1>(data) << ":" << floats[std::get<3>(data)] << "\n";
+                    break;
+                case 3:
+                    file << "\tdouble;" << std::get<1>(data) << ":" << doubles[std::get<3>(data)] << "\n";
+                    break;
+                case 4:
+                    file << "\tstring;" << std::get<1>(data) << ":\"" << strings[std::get<3>(data)] << "\"\n";
+                    break;
+                case 10:
+                    file << "\tint[];" << std::get<1>(data) << ":[" << intLists[std::get<3>(data)][0];
+                    for (int i = 1; i < intLists[std::get<3>(data)].size(); i++)
+                        file << "," << intLists[std::get<3>(data)][i];
+                    file << "]\n";
+                    break;
+                case 11:
+                    file << "\tuint[];" << std::get<1>(data) << ":[" << uintLists[std::get<3>(data)][0];
+                    for (int i = 1; i < uintLists[std::get<3>(data)].size(); i++)
+                        file << "," << uintLists[std::get<3>(data)][i];
+                    file << "]\n";
+                    break;
+                case 12:
+                    file << "\tfloat[];" << std::get<1>(data) << ":[" << floatLists[std::get<3>(data)][0];
+                    for (int i = 1; i < floatLists[std::get<3>(data)].size(); i++)
+                        file << "," << floatLists[std::get<3>(data)][i];
+                    file << "]\n";
+                    break;
+                case 13:
+                    file << "\tdouble[];" << std::get<1>(data) << ":[" << doubleLists[std::get<3>(data)][0];
+                    for (int i = 1; i < doubleLists[std::get<3>(data)].size(); i++)
+                        file << "," << doubleLists[std::get<3>(data)][i];
+                    file << "]\n";
+                    break;
+                case 14:
+                    file << "\tstring[];" << std::get<1>(data) << ":[\"" << stringLists[std::get<3>(data)][0] << "\"";
+                    for (int i = 1; i < stringLists[std::get<3>(data)].size(); i++)
+                        file << ",\"" << stringLists[std::get<3>(data)][i] << "\"";
+                    file << "]\n";
+                    break;
+                }
+            }
+        }
+        file << "}\n\n";
+    }
+    file.close();
+}
 
-            switch (std::get<1>(vIndex))
+int NDS::getInt(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 0)
+            return ints[std::get<3>(data)];
+    }
+    return 0;
+}
+
+unsigned int NDS::getUInt(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 1)
+            return uints[std::get<3>(data)];
+    }
+    return 0;
+}
+
+float NDS::getFloat(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 2)
+            return floats[std::get<3>(data)];
+    }
+    return 0;
+}
+
+double NDS::getDouble(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 3)
+            return doubles[std::get<3>(data)];
+    }
+    return 0;
+}
+
+std::string NDS::getString(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 4)
+            return strings[std::get<3>(data)];
+    }
+    return "";
+}
+
+std::vector<int> NDS::getIntList(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 10)
+            return intLists[std::get<3>(data)];
+    }
+    return std::vector<int>();
+}
+
+std::vector<unsigned int> NDS::getUIntList(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 11)
+            return uintLists[std::get<3>(data)];
+    }
+    return std::vector<unsigned int>();
+}
+
+std::vector<float> NDS::getFloatList(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 12)
+            return floatLists[std::get<3>(data)];
+    }
+    return std::vector<float>();
+}
+
+std::vector<double> NDS::getDoubleList(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 13)
+            return doubleLists[std::get<3>(data)];
+    }
+    return std::vector<double>();
+}
+
+std::vector<std::string> NDS::getStringList(std::string variableName, std::string groupName)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 14)
+            return stringLists[std::get<3>(data)];
+    }
+    return std::vector<std::string>();
+}
+
+std::vector<std::string> NDS::getGroupNames()
+{
+    return groupNames;
+}
+
+std::vector<std::tuple<int, std::string, int, int>> NDS::getGroupVariableData()
+{
+    return groupVariableData;
+}
+
+std::vector<int> NDS::getInts()
+{
+    return ints;
+}
+
+std::vector<unsigned int> NDS::getUInts()
+{
+    return uints;
+}
+
+std::vector<float> NDS::getFloats()
+{
+    return floats;
+}
+
+std::vector<double> NDS::getDoubles()
+{
+    return doubles;
+}
+
+std::vector<std::string> NDS::getStrings()
+{
+    return strings;
+}
+
+std::vector<std::vector<int>> NDS::getIntLists()
+{
+    return intLists;
+}
+
+std::vector<std::vector<unsigned int>> NDS::getUIntLists()
+{
+    return uintLists;
+}
+
+std::vector<std::vector<float>> NDS::getFloatLists()
+{
+    return floatLists;
+}
+
+std::vector<std::vector<double>> NDS::getDoubleLists()
+{
+    return doubleLists;
+}
+
+std::vector<std::vector<std::string>> NDS::getStringLists()
+{
+    return stringLists;
+}
+
+void NDS::setInt(std::string variableName, std::string groupName, int value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 0)
+        {
+            ints[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setUInt(std::string variableName, std::string groupName, unsigned int value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 1)
+        {
+            uints[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setFloat(std::string variableName, std::string groupName, float value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 2)
+        {
+            floats[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setDouble(std::string variableName, std::string groupName, double value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 3)
+        {
+            doubles[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setString(std::string variableName, std::string groupName, std::string value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 4)
+        {
+            strings[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setIntList(std::string variableName, std::string groupName, std::vector<int> value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 10)
+        {
+            intLists[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setUIntList(std::string variableName, std::string groupName, std::vector<unsigned int> value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 11)
+        {
+            uintLists[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setFloatList(std::string variableName, std::string groupName, std::vector<float> value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 12)
+        {
+            floatLists[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setDoubleList(std::string variableName, std::string groupName, std::vector<double> value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 13)
+        {
+            doubleLists[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::setStringList(std::string variableName, std::string groupName, std::vector<std::string> value)
+{
+    for (auto data : groupVariableData)
+    {
+        if (std::get<0>(data) == std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)) && std::get<1>(data) == variableName && std::get<2>(data) == 14)
+        {
+            stringLists[std::get<3>(data)] = value;
+            return;
+        }
+    }
+}
+
+void NDS::addGroup(std::string groupName)
+{
+    groupNames.push_back(groupName);
+}
+
+void NDS::removeGroup(std::string groupName)
+{
+    int groupIndex = std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName));
+    groupNames.erase(groupNames.begin() + groupIndex);
+    for (int i = 0; i < groupVariableData.size(); i++)
+    {
+        if (std::get<0>(groupVariableData[i]) == groupIndex)
+        {
+            groupVariableData.erase(groupVariableData.begin() + i);
+            i--;
+        }
+    }
+}
+
+void NDS::clearGroup(std::string groupName)
+{
+    int groupIndex = std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName));
+    for (int i = 0; i < groupVariableData.size(); i++)
+    {
+        if (std::get<0>(groupVariableData[i]) == groupIndex)
+        {
+            groupVariableData.erase(groupVariableData.begin() + i);
+            i--;
+        }
+    }
+}
+
+void NDS::addVariable(std::string variableName, std::string groupName, int variableType)
+{
+    groupVariableData.push_back(std::make_tuple(std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName)), variableName, variableType, -1));
+
+    switch (variableType)
+    {
+    case 0:
+        ints.push_back(0);
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), ints.size() - 1);
+        break;
+    case 1:
+        uints.push_back(0);
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), uints.size() - 1);
+        break;
+    case 2:
+        floats.push_back(0);
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), floats.size() - 1);
+        break;
+    case 3:
+        doubles.push_back(0);
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), doubles.size() - 1);
+        break;
+    case 4:
+        strings.push_back("");
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), strings.size() - 1);
+        break;
+    case 10:
+        intLists.push_back(std::vector<int>());
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), intLists.size() - 1);
+        break;
+    case 11:
+        uintLists.push_back(std::vector<unsigned int>());
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), uintLists.size() - 1);
+        break;
+    case 12:
+        floatLists.push_back(std::vector<float>());
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), floatLists.size() - 1);
+        break;
+    case 13:
+        doubleLists.push_back(std::vector<double>());
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), doubleLists.size() - 1);
+        break;
+    case 14:
+        stringLists.push_back(std::vector<std::string>());
+        groupVariableData[groupVariableData.size() - 1] = std::make_tuple(std::get<0>(groupVariableData[groupVariableData.size() - 1]), std::get<1>(groupVariableData[groupVariableData.size() - 1]), std::get<2>(groupVariableData[groupVariableData.size() - 1]), stringLists.size() - 1);
+        break;
+    }
+}
+
+void NDS::removeVariable(std::string variableName, std::string groupName)
+{
+    int groupIndex = std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName));
+    for (int i = 0; i < groupVariableData.size(); i++)
+    {
+        if (std::get<0>(groupVariableData[i]) == groupIndex && std::get<1>(groupVariableData[i]) == variableName)
+        {
+            switch (std::get<2>(groupVariableData[i]))
             {
             case 0:
-                std::cout << ints[std::get<2>(vIndex)] << std::endl;
+                ints.erase(ints.begin() + std::get<3>(groupVariableData[i]));
                 break;
             case 1:
-                std::cout << uints[std::get<2>(vIndex)] << std::endl;
+                uints.erase(uints.begin() + std::get<3>(groupVariableData[i]));
                 break;
             case 2:
-                std::cout << floats[std::get<2>(vIndex)] << std::endl;
+                floats.erase(floats.begin() + std::get<3>(groupVariableData[i]));
                 break;
             case 3:
-                std::cout << doubles[std::get<2>(vIndex)] << std::endl;
+                doubles.erase(doubles.begin() + std::get<3>(groupVariableData[i]));
                 break;
             case 4:
-                std::cout << strings[std::get<2>(vIndex)] << std::endl;
+                strings.erase(strings.begin() + std::get<3>(groupVariableData[i]));
+                break;
+            case 10:
+                intLists.erase(intLists.begin() + std::get<3>(groupVariableData[i]));
+                break;
+            case 11:
+                uintLists.erase(uintLists.begin() + std::get<3>(groupVariableData[i]));
+                break;
+            case 12:
+                floatLists.erase(floatLists.begin() + std::get<3>(groupVariableData[i]));
+                break;
+            case 13:
+                doubleLists.erase(doubleLists.begin() + std::get<3>(groupVariableData[i]));
+                break;
+            case 14:
+                stringLists.erase(stringLists.begin() + std::get<3>(groupVariableData[i]));
+                break;
+            }
+            groupVariableData.erase(groupVariableData.begin() + i);
+            i--;
+        }
+    }
+}
+
+void NDS::clearVariable(std::string variableName, std::string groupName)
+{
+    int groupIndex = std::distance(groupNames.begin(), std::find(groupNames.begin(), groupNames.end(), groupName));
+    for (int i = 0; i < groupVariableData.size(); i++)
+    {
+        if (std::get<0>(groupVariableData[i]) == groupIndex && std::get<1>(groupVariableData[i]) == variableName)
+        {
+            switch (std::get<2>(groupVariableData[i]))
+            {
+            case 0:
+                ints[std::get<3>(groupVariableData[i])] = 0;
+                break;
+            case 1:
+                uints[std::get<3>(groupVariableData[i])] = 0;
+                break;
+            case 2:
+                floats[std::get<3>(groupVariableData[i])] = 0;
+                break;
+            case 3:
+                doubles[std::get<3>(groupVariableData[i])] = 0;
+                break;
+            case 4:
+                strings[std::get<3>(groupVariableData[i])] = "";
+                break;
+            case 10:
+                intLists[std::get<3>(groupVariableData[i])] = std::vector<int>();
+                break;
+            case 11:
+                uintLists[std::get<3>(groupVariableData[i])] = std::vector<unsigned int>();
+                break;
+            case 12:
+                floatLists[std::get<3>(groupVariableData[i])] = std::vector<float>();
+                break;
+            case 13:
+                doubleLists[std::get<3>(groupVariableData[i])] = std::vector<double>();
+                break;
+            case 14:
+                stringLists[std::get<3>(groupVariableData[i])] = std::vector<std::string>();
                 break;
             }
         }
     }
+}
+
+void NDS::clearAll()
+{
+    ints.clear();
+    uints.clear();
+    floats.clear();
+    doubles.clear();
+    strings.clear();
+    intLists.clear();
+    uintLists.clear();
+    floatLists.clear();
+    doubleLists.clear();
+    stringLists.clear();
+    groupVariableData.clear();
+    groupNames.clear();
+}
+
+void NDS::setPath(std::string path)
+{
+    this->path = path;
+}
+
+std::string NDS::getPath()
+{
+    return this->path;
 }
