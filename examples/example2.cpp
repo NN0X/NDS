@@ -1,6 +1,4 @@
-﻿// <NDS\build> g++ ../examples/example2.cpp ../source/nds.cpp -o example2
-
-#include "../include/nds.h"
+﻿#include <nds.h>
 
 int main()
 {

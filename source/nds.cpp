@@ -1,4 +1,4 @@
-#include "../include/nds.h"
+#include <nds.h>
 
 NDS::NDS(std::string path)
 {
