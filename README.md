@@ -9,7 +9,7 @@
 
 ## SETUP
 
-    1. Extract 'nds.cpp' and 'ndl.h' from [Source directory](/source)
+    1. Extract 'nds.cpp' and 'ndl.h' from [Source directory](source)
     2. Add both files to your project as source file and header file
     3. Benefit?
 
