@@ -22,17 +22,3 @@ test2:{
     float;float:1.9
     float[];floatList:[2.5,2.8,6.7]
 }
-
-#?MOVE TO SEPERATE EXAMPLE FILES?
-
-#test3:<template>{      #directive <template> is used to specify that the group is a template
-    #string;type:"name"         #all variables with specified values will be copied to group using the template as constants
-    #int;index:?                #variable can be definded as template using "?" symbol
-    #double;size:?[2]           #when defining a list "[i]" is used, where "i" is number of elements
-#}
-
-#test4:<using>test3{1,[5,5]}    #"<using>" directive specifies the template used by the group
-
-#<using>test3             #"<using>" can be also used as global directive
-#test5:{1,[1,1]}
-#test6:{2,[2,2]}
