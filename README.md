@@ -1,11 +1,10 @@
 # Nox Database System (NDS)
 
-    Parser for Nox Database Language (NDL) files with '.ndl' file extension.
+        Parser for Nox Database Language (NDL) files with '.ndl' file extension.
     Splits data into groups (objects) with the aim of simplifying inheritance.
-    Ultimate goal for NDS is the creation of database interface for easy
-    human edition with '.ndl' files then compiled to Nox Database Binary (NDB),
-    files with '.ndb' file extension. Because of that NDS focuses on read speed with write
-    speed to '.ndl' being abysmal.
+        Ultimate goal for NDS is the creation of database interface for easy
+    human edition with '.ndl' files. Ultimate goal is a console tool with
+    syntax checking and file editing capabilities.
 
 ## SETUP
 
@@ -15,7 +14,15 @@
 
 ## RELEASE NOTES
 
-### VERSION 0.1 PRE-RELEASE:
+### VERSION PRE-RELEASE 0.2:
+
+    - added directives:
+        <template>
+        <using>
+    - changed structure of NDS class
+    - minor syntax changes to NDL format
+
+### VERSION PRE-RELEASE 0.1:
 
     - support for 5 explicit datatypes:
         int
