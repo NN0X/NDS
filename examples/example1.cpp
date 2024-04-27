@@ -2,7 +2,8 @@
 
 int main()
 {
-    NDS nds("../examples/example1.ndl");
+    NDS nds("../examples/example1");
     nds.loadNDL();
+    nds.printNDL();
     return 0;
 }

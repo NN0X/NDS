@@ -1,16 +1,17 @@
 group1:{
-	int;int1:-100
-	uint;uint1:50
-	float;float1:3.14
-	double;double1:3.14159
-	string;string1:"Hello, World!"
+	double:double1=3.14159;
+	float:float1=3.14;
+	string:string1="Hello, World!";
+	int:int1=-100;
+	uint:uint1=50;
 }
 
 group2:{
-	int[];intList1:[-1,-2,3,-4,-5]
-	uint[];uintList1:[1,2,3,4,5]
-	float[];floatList1:[1.1,2.2,3.3,4.4,5.5]
-	double[];doubleList1:[1.1,2.2,3.3,4.4,5.5]
-	string[];stringList1:["one","two","three","four","five"]
+	string[]:stringList2=["Tom","Joef","Alice","Bob","Charlie"];
+	string[]:stringList1=["one","two","three","four","five","six"];
+	double[]:doubleList1=[1.1,2.2,3.3,4.4,5.5,6.6];
+	float[]:floatList1=[1.1,2.2,3.3,4.4,5.5,6.6];
+	int[]:intList1=[-1,-2,3,-4,-5,6];
+	uint[]:uintList1=[1,2,3,4,5,6];
 }
 

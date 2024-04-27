@@ -1,6 +1,6 @@
 #example of working NDL file
 
-# is used to indicate that all characters in the same line after it are ignored
+# is used to indicate that all characters in the same line after it are to be ignored
 
 #supported datatypes:
 #   int
@@ -10,29 +10,41 @@
 #   string
 
 test1:{     #group is the biggest data object, similar to struct in C
-    string;string:"test string"
-    int;int:1
-    int[];intList:[1,3,4,5,6,7,12,314,241]           #list of variables does not require specified size
-    string[];stringList1:["test1","test2","test3"]   #list of variables
+    string:string="test string";
+    int:int=1;
+    int[]:intList=[1,3,4,5,6,7,12,314,241];           #list of variables does not require specified size
+    string[]:stringList1=["test1","test2","test3"];   #list of variables
 }
 
 test2:{
-    double;double:1.5   #"double;" is the type specifier
-    double[];doubleList:[1.3,1.4,7.1]   #"TYPE;" also works for arrays
-    float;float:1.9
-    float[];floatList:[2.5,2.8,6.7]
+    double:double=1.5;   #"double:" is the type specifier
+    double[]:doubleList=[1.3,1.4,7.1];   #"TYPE:" also works for arrays
+    float:float=1.9;
+    float[]:floatList=[2.5,2.8,6.7];
 }
 
 #?MOVE TO SEPERATE EXAMPLE FILES?
 
-#test3:<template>{      #directive <template> is used to specify that the group is a template
-    #string;type:"name"         #all variables with specified values will be copied to group using the template as constants
-    #int;index:?                #variable can be definded as template using "?" symbol
-    #double;size:?[2]           #when defining a list "[i]" is used, where "i" is number of elements
-#}
+<template>                     #directive "<template>" is used to specify that the group is a template
+test3:{      
+    string:type="name";          #all variables with specified values will be copied to group using the template as constants
+    int:index=?;                 #variable can be definded as template using "?" symbol
+    double[]:size=?[2];            #when defining a list "[i]" is used, where "i" is number of elements
+    #double[]:size=?[];           #"i" can be not specified as it exists only for syntax checking
+}
+</template>                     #"</template>" indicates end of scope for "<template>" directive
 
-#test4:<using>test3{1,[5,5]}    #"<using>" directive specifies the template used by the group
+<using:test3>                   #"<using>" directive specifies the template used by the group
+test5:{1;[1,1]}
+test6:{2;[2,2]}
+</using:test3>
 
-#<using>test3             #"<using>" can be also used as global directive
-#test5:{1,[1,1]}
-#test6:{2,[2,2]}
+<template>
+test10:{
+    string:test=?;
+}
+</template>
+
+<using:test10>
+test11:{"test"}
+</using:test10>

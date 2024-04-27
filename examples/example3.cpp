@@ -2,7 +2,7 @@
 
 int main()
 {
-    NDS nds("../examples/example3.ndl");
+    NDS nds("../examples/example3");
 
     for (int i = 0; i < 100; i++)
     {
@@ -11,15 +11,18 @@ int main()
         for (int j = 0; j < 50; j++)
         {
             std::string variableName = std::to_string(j);
-            nds.addVariable(variableName, groupName, NDS::DOUBLE_LIST);
-            nds.setDoubleList(variableName, groupName, {1.1, 2.2, 3.3});
+            nds.addArray(variableName, groupName, NDS::DOUBLE);
+            nds.setDoubleArray(variableName, groupName, {1.1, 2.2, 3.3});
         }
         std::cout << i << "/99\n";
     }
 
     nds.saveNDL();
 
-    nds.clearAll();
+    std::cout << "Press 'ENTER' to continue...";
+    std::cin.get();
+
+    nds.clear();
 
     nds.loadNDL();
 
