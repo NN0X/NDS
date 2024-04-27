@@ -91,6 +91,7 @@ public:
 
     void addGroup(const std::string &groupName);
     void removeGroup(const std::string &groupName);
+    std::vector<std::string> getGroupNames();
 
     void addVariable(const std::string &variableName, const std::string &groupName, unsigned int variableType);
     void addArray(const std::string &variableName, const std::string &groupName, unsigned int variableType);

@@ -222,6 +222,11 @@ void NDS::removeGroup(const std::string &groupName)
     groupVariables.erase(groupName);
 }
 
+std::vector<std::string> NDS::getGroupNames()
+{
+    return groupNames;
+}
+
 void NDS::addVariable(const std::string &variableName, const std::string &groupName, unsigned int type)
 {
     groupVariables[groupName][variableName] = NDSVariableInfo(variableName, variables.size(), type, false);
